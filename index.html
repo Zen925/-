@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>极简购物体验</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+            },
+            colors: {
+              brand: {
+                50: '#f6f6f8',
+                100: '#ececf1',
+                200: '#d7d7e3',
+                300: '#b5b6cb',
+                400: '#8f90b4',
+                500: '#6b6f9b',
+                600: '#52557a',
+                700: '#3c3e5a',
+                800: '#25273b',
+                900: '#141524',
+              },
+            },
+            boxShadow: {
+              soft: '0 18px 45px rgba(15, 23, 42, 0.18)',
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="min-h-screen bg-brand-50 text-slate-900 antialiased">
+    <div class="flex min-h-screen">
+      <!-- 商品列表区域 -->
+      <main class="flex-1 px-8 py-8 lg:px-16 lg:py-12 relative">
+        <!-- 顶部导航 -->
+        <header class="flex items-center justify-between mb-10">
+          <div class="flex items-center gap-3">
+            <div class="h-9 w-9 rounded-full bg-brand-900 text-white flex items-center justify-center text-xs tracking-[0.35em]">
+              LX
+            </div>
+            <div>
+              <p class="text-xs tracking-[0.3em] uppercase text-slate-500">Limited Edition</p>
+              <p class="text-sm text-slate-700">极简生活选物店</p>
+            </div>
+          </div>
+          <button
+            id="loginTrigger"
+            class="hidden sm:inline-flex items-center gap-2 rounded-full bg-white/80 hover:bg-white px-4 py-2 text-xs font-medium text-slate-800 shadow-sm ring-1 ring-slate-200/80 backdrop-blur transition"
+          >
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            登录 / 注册
+          </button>
+        </header>
+
+        <!-- 标题 -->
+        <section class="mb-8 lg:mb-12">
+          <h1 class="text-3xl lg:text-4xl font-medium tracking-tight text-slate-900 mb-3">
+            新季 · 每日选物
+          </h1>
+          <p class="text-sm text-slate-500 max-w-xl">
+            精选一些真正想长期使用的好物，摒弃复杂设计与廉价堆砌，只保留恰到好处的质感与功能。
+          </p>
+        </section>
+
+        <!-- 商品网格 -->
+        <section
+          class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 items-start"
+          id="productGrid"
+        >
+          <!-- 商品卡片模板通过 JS 注入 -->
+        </section>
+      </main>
+
+      <!-- 购物车侧边栏 -->
+      <aside
+        id="cartSidebar"
+        class="w-[320px] lg:w-[360px] border-l border-slate-200 bg-white/90 backdrop-blur-xl px-6 py-8 flex flex-col justify-between shadow-2xl/10"
+      >
+        <div>
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <p class="text-xs tracking-[0.28em] uppercase text-slate-400">Cart</p>
+              <p class="text-sm text-slate-700 mt-1">购物车</p>
+            </div>
+            <button
+              id="cartClear"
+              class="text-xs text-slate-400 hover:text-slate-700 underline-offset-4 hover:underline"
+            >
+              清空
+            </button>
+          </div>
+
+          <div
+            id="cartEmpty"
+            class="flex flex-col items-start gap-2 text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl px-4 py-5"
+          >
+            <p>当前购物车为空。</p>
+            <p>从左侧选中商品后将自动汇总至此。</p>
+          </div>
+
+          <div id="cartItems" class="hidden flex-col gap-4 max-h-[60vh] overflow-y-auto pr-1 text-sm">
+            <!-- 动态插入购物车条目 -->
+          </div>
+        </div>
+
+        <div class="space-y-4 border-t border-slate-200 pt-4">
+          <div class="flex items-center justify-between text-xs text-slate-500">
+            <span>已选件数</span>
+            <span id="cartCount" class="text-slate-800 font-medium">0</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-500">合计</span>
+            <div class="flex items-baseline gap-1">
+              <span class="text-xs text-slate-400">¥</span>
+              <span id="cartTotal" class="text-2xl font-medium tracking-tight text-slate-900">0</span>
+            </div>
+          </div>
+          <button
+            id="checkoutBtn"
+            class="w-full inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 hover:bg-black text-xs font-medium tracking-[0.2em] uppercase text-white py-3 transition disabled:bg-slate-300 disabled:text-slate-100 disabled:cursor-not-allowed"
+            disabled
+          >
+            结算
+            <span class="text-[10px] tracking-normal" id="checkoutHint">请先添加商品</span>
+          </button>
+          <p class="text-[10px] text-slate-400 leading-relaxed">
+            无任何促销噱头与复杂优惠，价格即价值本身。
+          </p>
+        </div>
+      </aside>
+    </div>
+
+    <!-- 登录小窗（悬浮在商品页面上方） -->
+    <div
+      id="loginOverlay"
+      class="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/35 backdrop-blur-sm opacity-0 pointer-events-none transition"
+    >
+      <div
+        class="relative w-full max-w-md rounded-3xl bg-white/95 shadow-soft border border-white/60 px-8 py-8 md:px-10 md:py-9"
+      >
+        <!-- 关闭按钮 -->
+        <button
+          id="loginClose"
+          class="absolute right-5 top-5 text-slate-400 hover:text-slate-700 transition"
+          aria-label="关闭登录窗口"
+        >
+          ✕
+        </button>
+
+        <!-- 标题 -->
+        <div class="mb-6">
+          <p class="text-xs tracking-[0.3em] uppercase text-slate-400 mb-2">Sign In</p>
+          <h2 class="text-xl font-medium tracking-tight text-slate-900 mb-1">
+            登录以同步购物车
+          </h2>
+          <p class="text-xs text-slate-500">
+            我们只做必要的数据同步，不会向你推送任何营销通知。
+          </p>
+        </div>
+
+        <!-- 登录表单 -->
+        <form id="loginForm" class="space-y-5">
+          <div class="space-y-1">
+            <label for="email" class="text-xs text-slate-500">邮箱</label>
+            <input
+              id="email"
+              type="email"
+              required
+              class="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900/70 transition"
+              placeholder="you@example.com"
+            />
+          </div>
+          <div class="space-y-1">
+            <label for="password" class="text-xs text-slate-500">密码</label>
+            <input
+              id="password"
+              type="password"
+              required
+              minlength="6"
+              class="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900/70 transition"
+              placeholder="至少 6 位"
+            />
+          </div>
+
+          <div class="flex items-center justify-between text-xs text-slate-500">
+            <label class="inline-flex items-center gap-2">
+              <input
+                id="rememberMe"
+                type="checkbox"
+                class="h-3.5 w-3.5 rounded border-slate-300 text-slate-900 focus:ring-slate-900/80"
+              />
+              <span>记住登录</span>
+            </label>
+            <button
+              type="button"
+              class="text-slate-400 hover:text-slate-700 underline-offset-4 hover:underline"
+            >
+              忘记密码？
+            </button>
+          </div>
+
+          <button
+            type="submit"
+            class="w-full inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 hover:bg-black text-xs font-medium tracking-[0.2em] uppercase text-white py-2.5 transition"
+          >
+            进入
+          </button>
+
+          <p class="text-[10px] text-slate-400 leading-relaxed">
+            继续操作即表示你已阅读并同意
+            <button type="button" class="underline underline-offset-4 hover:text-slate-700">
+              使用条款
+            </button>
+            与
+            <button type="button" class="underline underline-offset-4 hover:text-slate-700">
+              隐私说明
+            </button>
+            。
+          </p>
+        </form>
+      </div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div
+      id="toast"
+      class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 rounded-full bg-slate-900/95 text-white text-xs px-4 py-2.5 shadow-soft flex items-center gap-2 opacity-0 pointer-events-none transition"
+    >
+      <span id="toastText"></span>
+    </div>
+
+    <!-- 逻辑脚本 -->
+    <script>
+      const products = [
+        {
+          id: 1,
+          name: '无印感陶瓷马克杯',
+          desc: '细腻哑光釉面，适合黑咖与茶',
+          price: 129,
+          tag: '晨间',
+        },
+        {
+          id: 2,
+          name: '羊毛混纺轻薄披肩',
+          desc: '四季皆宜的轻盈保暖',
+          price: 389,
+          tag: '通勤',
+        },
+        {
+          id: 3,
+          name: '实木小边几',
+          desc: '留白空间里的安静存在',
+          price: 699,
+          tag: '家居',
+        },
+        {
+          id: 4,
+          name: '香氛蜡烛 · 雨后石板',
+          desc: '介于木质与矿物之间的气息',
+          price: 199,
+          tag: '氛围',
+        },
+        {
+          id: 5,
+          name: '亚麻床品三件套',
+          desc: '有呼吸感的自然褶皱',
+          price: 929,
+          tag: '卧室',
+        },
+        {
+          id: 6,
+          name: '极简皮质卡包',
+          desc: '只装真正需要的几张卡片',
+          price: 259,
+          tag: '日常',
+        },
+        {
+          id: 7,
+          name: '手工玻璃花瓶',
+          desc: '一支花也不显孤单',
+          price: 329,
+          tag: '花器',
+        },
+        {
+          id: 8,
+          name: '折叠便携雨伞',
+          desc: '不占空间的细节耐用之选',
+          price: 189,
+          tag: '出行',
+        },
+      ];
+
+      const state = {
+        cart: [],
+        loggedIn: false,
+      };
+
+      const qs = (s) => document.querySelector(s);
+      const qsa = (s) => Array.from(document.querySelectorAll(s));
+
+      const productGrid = qs('#productGrid');
+      const cartSidebar = qs('#cartSidebar');
+      const cartItems = qs('#cartItems');
+      const cartEmpty = qs('#cartEmpty');
+      const cartCountEl = qs('#cartCount');
+      const cartTotalEl = qs('#cartTotal');
+      const checkoutBtn = qs('#checkoutBtn');
+      const checkoutHint = qs('#checkoutHint');
+
+      const loginOverlay = qs('#loginOverlay');
+      const loginTrigger = qs('#loginTrigger');
+      const loginClose = qs('#loginClose');
+      const loginForm = qs('#loginForm');
+
+      const cartClearBtn = qs('#cartClear');
+
+      const toastEl = qs('#toast');
+      const toastText = qs('#toastText');
+
+      function showToast(message) {
+        toastText.textContent = message;
+        toastEl.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-2');
+        toastEl.classList.add('opacity-100');
+
+        setTimeout(() => {
+          toastEl.classList.add('opacity-0', 'pointer-events-none');
+        }, 1800);
+      }
+
+      function renderProducts() {
+        const fragment = document.createDocumentFragment();
+
+        products.forEach((p) => {
+          const card = document.createElement('article');
+          card.className =
+            'group rounded-3xl bg-white/80 border border-slate-200/80 hover:border-slate-900/30 hover:bg-white/95 transition shadow-sm hover:shadow-soft flex flex-col overflow-hidden';
+
+          card.innerHTML = `
+            <div class="aspect-[4/3] bg-gradient-to-br from-slate-100 via-slate-50 to-slate-200 flex items-center justify-center">
+              <div class="h-16 w-16 rounded-full border border-slate-300/80 flex items-center justify-center text-[11px] text-slate-500 tracking-[0.2em]">
+                ${p.tag}
+              </div>
+            </div>
+            <div class="flex-1 px-5 pt-4 pb-4 flex flex-col gap-3">
+              <div>
+                <h3 class="text-sm font-medium text-slate-900 mb-1 line-clamp-1">${p.name}</h3>
+                <p class="text-xs text-slate-500 line-clamp-2 min-h-[2.5rem]">${p.desc}</p>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-baseline gap-1">
+                  <span class="text-[11px] text-slate-400">¥</span>
+                  <span class="text-lg font-medium tracking-tight text-slate-900">${p.price}</span>
+                </div>
+                <button
+                  data-id="${p.id}"
+                  class="add-to-cart inline-flex items-center gap-1.5 rounded-full border border-slate-300/80 px-3 py-1.5 text-[11px] text-slate-700 hover:border-slate-900 hover:bg-slate-900 hover:text-white transition"
+                >
+                  <span class="inline-block h-1 w-1 rounded-full bg-emerald-400"></span>
+                  加入
+                </button>
+              </div>
+            </div>
+          `;
+
+          fragment.appendChild(card);
+        });
+
+        productGrid.appendChild(fragment);
+      }
+
+      function updateCartView() {
+        if (state.cart.length === 0) {
+          cartEmpty.classList.remove('hidden');
+          cartItems.classList.add('hidden');
+          cartItems.innerHTML = '';
+          cartCountEl.textContent = '0';
+          cartTotalEl.textContent = '0';
+          checkoutBtn.disabled = true;
+          checkoutHint.textContent = '请先添加商品';
+          return;
+        }
+
+        cartEmpty.classList.add('hidden');
+        cartItems.classList.remove('hidden');
+        cartItems.innerHTML = '';
+
+        const fragment = document.createDocumentFragment();
+        let total = 0;
+        let count = 0;
+
+        state.cart.forEach((item) => {
+          total += item.price * item.quantity;
+          count += item.quantity;
+
+          const row = document.createElement('div');
+          row.className =
+            'flex items-center justify-between gap-3 border border-slate-200 rounded-2xl px-3.5 py-3 bg-slate-50/70';
+
+          row.innerHTML = `
+            <div class="flex-1">
+              <p class="text-xs text-slate-900 mb-1 line-clamp-1">${item.name}</p>
+              <p class="text-[11px] text-slate-400">¥${item.price} × ${item.quantity}</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                data-id="${item.id}"
+                class="cart-decrease text-slate-400 hover:text-slate-700 text-sm px-1"
+              >–</button>
+              <span class="text-xs text-slate-700 w-4 text-center">${item.quantity}</span>
+              <button
+                data-id="${item.id}"
+                class="cart-increase text-slate-400 hover:text-slate-700 text-sm px-1"
+              >+</button>
+            </div>
+          `;
+
+          fragment.appendChild(row);
+        });
+
+        cartItems.appendChild(fragment);
+        cartCountEl.textContent = count.toString();
+        cartTotalEl.textContent = total.toString();
+        checkoutBtn.disabled = false;
+        checkoutHint.textContent = '共 ' + count + ' 件';
+      }
+
+      function addToCart(productId) {
+        const existing = state.cart.find((i) => i.id === productId);
+        if (existing) {
+          existing.quantity += 1;
+        } else {
+          const product = products.find((p) => p.id === productId);
+          if (!product) return;
+          state.cart.push({ ...product, quantity: 1 });
+        }
+        updateCartView();
+        showToast('已加入购物车');
+      }
+
+      function clearCart() {
+        state.cart = [];
+        updateCartView();
+        showToast('购物车已清空');
+      }
+
+      function toggleLoginOverlay(show) {
+        if (show) {
+          loginOverlay.classList.remove('opacity-0', 'pointer-events-none');
+        } else {
+          loginOverlay.classList.add('opacity-0', 'pointer-events-none');
+        }
+      }
+
+      function handleLogin(e) {
+        e.preventDefault();
+        const email = qs('#email').value.trim();
+        const pwd = qs('#password').value.trim();
+
+        if (!email || !pwd) return;
+
+        state.loggedIn = true;
+        toggleLoginOverlay(false);
+        showToast('登录成功，购物车已与账号绑定（示意）');
+        if (loginTrigger) {
+          loginTrigger.textContent = '已登录';
+          loginTrigger.classList.add('bg-slate-900', 'text-white');
+        }
+      }
+
+      function initEvents() {
+        // 商品加入购物车
+        productGrid.addEventListener('click', (e) => {
+          const btn = e.target.closest('.add-to-cart');
+          if (!btn) return;
+          const id = Number(btn.getAttribute('data-id'));
+          addToCart(id);
+        });
+
+        // 购物车数量增减
+        cartItems.addEventListener('click', (e) => {
+          const inc = e.target.closest('.cart-increase');
+          const dec = e.target.closest('.cart-decrease');
+          if (!inc && !dec) return;
+          const id = Number((inc || dec).getAttribute('data-id'));
+          const item = state.cart.find((i) => i.id === id);
+          if (!item) return;
+
+          if (inc) item.quantity += 1;
+          if (dec) item.quantity = Math.max(0, item.quantity - 1);
+
+          state.cart = state.cart.filter((i) => i.quantity > 0);
+          updateCartView();
+        });
+
+        // 清空购物车
+        cartClearBtn.addEventListener('click', clearCart);
+
+        // 登录弹窗控制
+        if (loginTrigger) {
+          loginTrigger.addEventListener('click', () => toggleLoginOverlay(true));
+        }
+        loginClose.addEventListener('click', () => toggleLoginOverlay(false));
+        loginOverlay.addEventListener('click', (e) => {
+          if (e.target === loginOverlay) toggleLoginOverlay(false);
+        });
+
+        // 登录表单提交
+        loginForm.addEventListener('submit', handleLogin);
+
+        // 结算按钮
+        checkoutBtn.addEventListener('click', () => {
+          if (state.cart.length === 0) return;
+          const total = cartTotalEl.textContent;
+          showToast('本次合计 ¥' + total + '（示意，不实际支付）');
+        });
+      }
+
+      // 初始化
+      renderProducts();
+      updateCartView();
+      initEvents();
+    </script>
+  </body>
+</html>
+
